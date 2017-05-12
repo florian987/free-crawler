@@ -1,0 +1,35 @@
+# This file is a "template" of what your parameters.yml file should look like
+# Set parameters here that may be different on each deployment target of the app, e.g. development, staging, production.
+# http://symfony.com/doc/current/best_practices/configuration.html#infrastructure-related-configuration
+parameters:
+    database_host:     127.0.0.1
+    database_port:     ~
+    database_name:     symfony
+    database_user:     root
+    database_password: ~
+    # You should uncomment this if you want use pdo_sqlite
+    # database_path: "%kernel.root_dir%/data.db3"
+
+    mailer_transport:  smtp
+    mailer_host:       127.0.0.1
+    mailer_user:       ~
+    mailer_password:   ~
+
+    # A secret key that's used to generate certain security-related tokens
+    secret:            ThisTokenIsNotSoSecretChangeIt
+
+    base_uri: 'http://sorties.telerama.fr'
+    query_string:
+      loc: '48.86,2.34445'
+      stid: '88149'
+    timeout: 10
+    proxy:
+
+    cookie_value:
+
+    mail_from: no-reply@test.fr
+    mail_to:
+
+    pushover_uri: 'https://api.pushover.net/1/'
+    pushover_user:
+    pushover_token:
