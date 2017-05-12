@@ -18,6 +18,8 @@ parameters:
     # A secret key that's used to generate certain security-related tokens
     secret:            ThisTokenIsNotSoSecretChangeIt
 
+    mongodb_server: 'mongodb://localhost:27017'
+
     base_uri: 'http://sorties.telerama.fr'
     query_string:
       loc: '48.86,2.34445'
