@@ -28,26 +28,30 @@ class AppCheckUpdatesCommand extends ContainerAwareCommand
         $stopwatch = new Stopwatch();
         $stopwatch->start('command');
 
-        $output->writeln('Getting HTML from website...');
-        $html = $this->getHTML();
+        try {
+            $output->writeln('Getting HTML from website...');
+            $html = $this->getHTML();
 
-        $output->writeln('Parsing HTML to get events...');
-        $events = $this->getEvents($html);
+            $output->writeln('Parsing HTML to get events...');
+            $events = $this->getEvents($html);
 
-        $output->writeln('Checking updates or new events...');
-        $updates = $this->checkEvents($events);
+            $output->writeln('Checking updates or new events...');
+            $updates = $this->checkEvents($events);
 
-        if(count($updates) > 0) {
-            $output->writeln(count($updates) . ' new or updated events.');
+            if(count($updates) > 0) {
+                $output->writeln(count($updates) . ' new or updated events.');
 
-            if($input->getOption('notification')) {
-                $output->writeln('Sending notification...');
-                $this->sendNotification($updates);
-            } else {
-                $output->writeln('Sending mail...');
-                $this->sendEmail($updates);
+                if($input->getOption('notification')) {
+                    $output->writeln('Sending notification...');
+                    $this->sendNotification($updates);
+                } else {
+                    $output->writeln('Sending mail...');
+                    $this->sendEmail($updates);
+                }
             }
 
+        } catch(\Exception $e) {
+            $this->postToPushover('Erreur free-crawler', $e->getMessage());
         }
 
         $output->writeln('Done.');
@@ -128,14 +132,13 @@ class AppCheckUpdatesCommand extends ContainerAwareCommand
     protected function checkEvents(array $events)
     {
         $updates = [];
+        $dm = $this->getContainer()->get('doctrine_mongodb')->getManager();
 
         foreach ($events as $id => $event) {
             $storedEvent = $this->getContainer()
                 ->get('doctrine_mongodb')
                 ->getRepository('AppBundle:Event')
                 ->findOneBy(['eventId' => $event['id']]);
-
-            $dm = $this->getContainer()->get('doctrine_mongodb')->getManager();
 
             if ($storedEvent instanceof Event) {
                 if ($event['status'] !== $storedEvent->getStatus()) {
@@ -172,7 +175,16 @@ class AppCheckUpdatesCommand extends ContainerAwareCommand
         $this->getContainer()->get('mailer')->send($message);
     }
 
-    protected function sendNotification(array $updates)
+    protected function sendNotification(array $events)
+    {
+        /** @var Event $event */
+        foreach ($events as $event) {
+            $message = (string) $event;
+            $this->postToPushover('Nouvel évènement', $message);
+        }
+    }
+
+    private function postToPushover($title, $message)
     {
         $client = new Client(
             [
@@ -182,19 +194,16 @@ class AppCheckUpdatesCommand extends ContainerAwareCommand
             ]
         );
 
-        /** @var Event $event */
-        foreach ($updates as $event) {
-            $response = $client->post(
-                'messages.json',
-                [
-                    'form_params' => [
-                        'token' => $this->getContainer()->getParameter('pushover_token'),
-                        'user' => $this->getContainer()->getParameter('pushover_user'),
-                        'message' => (string) $event,
-                        'title' => 'Nouvel évènement',
-                    ],
-                ]
-            );
-        }
+        $response = $client->post(
+            'messages.json',
+            [
+                'form_params' => [
+                    'token' => $this->getContainer()->getParameter('pushover_token'),
+                    'user' => $this->getContainer()->getParameter('pushover_user'),
+                    'message' => $message,
+                    'title' => $title,
+                ],
+            ]
+        );
     }
 }
